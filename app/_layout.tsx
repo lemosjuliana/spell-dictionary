@@ -1,14 +1,36 @@
 import { Stack } from "expo-router";
-import { useFonts } from "expo-font";
-import { Text } from "react-native";
+import { useFonts } from "expo-font"
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect, useState } from "react";
 
+SplashScreen.preventAutoHideAsync();
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "Harry-Potter": require("../assets/fonts/HarryPotter-ov4z.ttf"),
   });
 
-  if (!fontsLoaded){
-    return <Text>Loading...</Text>
+  const [spellsLoaded, setSpellsLoaded] = useState(false);
+
+    useEffect(() => {
+    fetch("https://hp-api.onrender.com/api/spells")
+      .then((res) => res.json())
+      .then(() => {
+        setSpellsLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Spell preload failed:", err);
+        setSpellsLoaded(true); 
+      });
+  }, []); 
+  
+  useEffect(() => {
+    if (fontsLoaded && spellsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, spellsLoaded]);
+
+  if (!fontsLoaded || !spellsLoaded) {
+    return null; 
   }
   return <Stack />;
 }

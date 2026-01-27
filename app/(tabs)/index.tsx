@@ -15,20 +15,22 @@ export default function Index() {
 
 //////////////////////////////////////
 
-useEffect(() => {
-  fetch("https://hp-api.onrender.com/api/spells")
-    .then((res) => res.json())
-    .then((data: Spell[]) => {
-      setSpells(data);
-      pickRandomSpell(data);
-      // setRandomSpell(data[Math.floor(Math.random() * data.length)].name);
-      setLoading(false);
-    })
-    .catch((err) => {
-      console.error("Error fetching spells: ", err);
-      setLoading(false);
-    });
-}, []);
+  useEffect(() => {
+    const fetchSpells = async () => {
+      try {
+        const res = await fetch("https://hp-api.onrender.com/api/spells");
+        const data: Spell[] = await res.json();
+        setSpells(data);
+        pickRandomSpell(data);
+      } catch (error) {
+        console.error("Error fetching spells:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSpells();
+  }, []);
 
 //////////////////////////////////////
 
@@ -42,58 +44,49 @@ const handlePress = () => pickRandomSpell(spells);
 
 //////////////////////////////////////
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      
-      <View> 
+    <View style={styles.container}>
       <Text style={styles.title}>Spell Dictionary</Text>
-      </View>
-      {
-        loading ? (
-          <ActivityIndicator
-          size="large"
-          color="brown"
-          style={
-            {
-              marginTop: 40
-            }
-          }>
-          </ActivityIndicator>
-        ):(
-          <>
+
+      {loading ? (
+        <ActivityIndicator size="large" color="brown" />
+      ) : (
+        <>
           <View style={styles.spellBox}>
             <Text style={styles.spellText}>
               {randomSpell || "No spell yet"}
             </Text>
           </View>
-        <TouchableOpacity style={styles.button} onPress={handlePress}>
-          <Text style={styles.buttonText}>Generate Spell</Text>
-        </TouchableOpacity>
 
-          </>
-        )
-      }
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handlePress}
+            disabled={!spells.length}
+          >
+            <Text style={styles.buttonText}>Generate Spell</Text>
+          </TouchableOpacity>
+        </>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   title: {
     fontFamily: "Harry-Potter",
     fontSize: 30,
-    marginBottom: 200,
+    marginBottom: 80,
   },
   spellBox: {
     padding: 20,
     minWidth: 250,
     alignItems: "center",
   },
-   spellText: {
+  spellText: {
     fontSize: 24,
     fontWeight: "600",
     textAlign: "center",
