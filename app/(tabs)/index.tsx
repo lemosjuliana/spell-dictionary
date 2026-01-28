@@ -1,5 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Text, View, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
+import { Audio } from "expo-av"; 
+
+
 
 type Spell = {
   name: string,
@@ -9,9 +13,13 @@ type Spell = {
 ///////////////////////////////////////
 
 export default function Index() {
+  const router = useRouter();
   const [spells, setSpells] = useState<Spell[]>([]);
-  const [randomSpell, setRandomSpell] = useState<string | null>(null);
+  const [selectedSpell, setSelectedSpell] = useState<Spell | null>(null);
   const [loading, setLoading] = useState(true);
+  const soundRef = useRef<Audio.Sound | null>(null);
+  const buttonSoundRef = useRef<Audio.Sound | null>(null);
+
 
 //////////////////////////////////////
 
@@ -32,30 +40,82 @@ export default function Index() {
     fetchSpells();
   }, []);
 
+  useEffect(() => {
+  const loadSound = async () => {
+    const { sound } = await Audio.Sound.createAsync(
+      require("../../assets/sounds/spell.mp3")
+    );
+
+      const { sound: buttonSound } = await Audio.Sound.createAsync(
+      require("../../assets/sounds/button.mp3")
+    );
+
+    soundRef.current = sound;
+    buttonSoundRef.current = buttonSound;
+  };
+
+  loadSound();
+
+  return () => {
+    soundRef.current?.unloadAsync();
+    buttonSoundRef.current?.unloadAsync();
+  };
+}, []);
+
+
 //////////////////////////////////////
 
 const pickRandomSpell = (spelllist: Spell[]) => {
   if (spelllist.length === 0) return;
   const randomIndex = Math.floor(Math.random() * spelllist.length);
-  setRandomSpell(spelllist[randomIndex].name);
+  setSelectedSpell(spelllist[randomIndex]);
 };
 
-const handlePress = () => pickRandomSpell(spells);
+const handlePress = async () => {
+  try {
+    await buttonSoundRef.current?.replayAsync();
+    pickRandomSpell(spells);
+  } catch (error) {
+    console.log("Button sound error:", error);
+  }
+};
+
+
+const playSoundAndNavigate = async () => {
+  if (!selectedSpell || !soundRef.current) return;
+
+  try {
+    await soundRef.current.replayAsync();
+
+    router.push({
+      pathname: "/spell/[name]",
+      params: {
+        name: selectedSpell.name,
+        description: selectedSpell.description,
+      },
+    });
+  } catch (error) {
+    console.log("Sound/navigation error:", error);
+  }
+};
+
 
 //////////////////////////////////////
-  return (
+   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Spell Dictionary</Text>
-
       {loading ? (
         <ActivityIndicator size="large" color="brown" />
       ) : (
         <>
-          <View style={styles.spellBox}>
+          <TouchableOpacity
+            style={styles.spellBox}
+            disabled={!selectedSpell}
+            onPress={playSoundAndNavigate}
+          >
             <Text style={styles.spellText}>
-              {randomSpell || "No spell yet"}
+              {selectedSpell?.name || "No spell yet"}
             </Text>
-          </View>
+          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.button}
@@ -75,32 +135,37 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#c8a468",
+    
   },
   title: {
     fontFamily: "Harry-Potter",
     fontSize: 30,
     marginBottom: 80,
+    color: "#432818", 
   },
   spellBox: {
     padding: 20,
     minWidth: 250,
     alignItems: "center",
+    
   },
   spellText: {
-    fontSize: 24,
-    fontWeight: "600",
+    fontSize: 40,
+    fontFamily: "Harry-Potter",
     textAlign: "center",
+    color: "#432818",
   },
   button: {
-    backgroundColor: "brown",
+    backgroundColor: "#6F1D1B",
     borderRadius: 10,
-    paddingVertical: 12,
+    paddingVertical: 20,
     paddingHorizontal: 25,
     marginTop: 20,
     alignItems: "center",
   },
   buttonText: {
-    color: "#fff",
+    color: "#faefd2",
     fontSize: 18,
     fontWeight: "bold",
   },
