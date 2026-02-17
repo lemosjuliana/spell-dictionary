@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useEffect, useState } from "react";
 
 SplashScreen.preventAutoHideAsync();
-export default function RootLayout() {
+export default function Layout() {
   const [fontsLoaded] = useFonts({
     "Harry-Potter": require("../assets/fonts/HarryPotter-ov4z.ttf"),
   });
@@ -32,5 +32,11 @@ export default function RootLayout() {
   if (!fontsLoaded || !spellsLoaded) {
     return null; 
   }
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="splash" />
+      <Stack.Screen name="(tabs)/index" />
+      <Stack.Screen name="(tabs)/spell/[name]" />
+    </Stack>
+  );
 }
